@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Vantuan1606/app-buff/domain"
@@ -31,6 +32,7 @@ func (us *userUsecase) GetUser(c context.Context, userID string) (*domain.User, 
 	defer cancel()
 
 	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	log.Println("userID", userObjectID)
 	if err != nil {
 		logrus.Error(err)
 		return nil, errors.New("Invalid ID")
