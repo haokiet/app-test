@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhập Link TikTok</title>
+</head>
+<body>
+    <h2>Nhập Link TikTok</h2>
+
+    <label>Nhập Link:</label>
+    <input type="text" id="linkInput" placeholder="Nhập link"><br><br>
+
+    <label>Nhập Số:</label>
+    <input type="number" id="numberInput" placeholder="Nhập số"><br><br>
+
+    <button onclick="sendData()">Bắt Đầu</button>
+
+    <p id="response" style="color: green;"></p> <!-- Vị trí hiển thị thông báo -->
+
+    <script>
+        function sendData() {
+            let link = document.getElementById("linkInput").value;
+            let number = document.getElementById("numberInput").value;
+
+            // fetch("http://localhost:8080/", {
+            //     method: "POST",
+            //     headers: { "Content-Type": "application/json" },
+            //     body: JSON.stringify({ link: link, number: parseInt(number) })
+            // })
+            // .then(response => response.text())
+            // .then(data => {
+                // Hiển thị thông báo thành công
+                document.getElementById("response").innerText = "Thông báo: " + data;
+                document.getElementById("response").style.color = "green"; // Màu xanh cho thông báo thành công
+            // })
+            // .catch(error => {
+            //     // Hiển thị thông báo lỗi nếu có
+            //     document.getElementById("response").innerText = "Lỗi: " + error;
+            //     document.getElementById("response").style.color = "red"; // Màu đỏ cho thông báo lỗi
+            // });
+        }
+    </script>
+</body>
+</html>
