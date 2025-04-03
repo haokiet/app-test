@@ -1,0 +1,10 @@
+{
+    "app": {
+      "port": "8080"
+    },
+    "mongo": {
+      "uri": "mongodb+srv://kietkhan0:BfOAkPYYpzQJKLbM@marketingtool01.pe1d5ra.mongodb.net/?retryWrites=true&w=majority&appName=MarketingTool01",
+      "database": "MarketingTool01"
+    }
+  }
+ 
