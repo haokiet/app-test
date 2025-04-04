@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Vantuan1606/app-buff/config"
+	"github.com/Vantuan1606/app-test/config"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

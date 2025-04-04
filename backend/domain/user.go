@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 
-	"github.com/Vantuan1606/app-buff/user"
+	"github.com/Vantuan1606/app-test/user"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )

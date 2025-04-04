@@ -3,10 +3,10 @@ package repo
 import (
 	"context"
 
-	"github.com/Vantuan1606/app-buff/config"
+	"github.com/Vantuan1606/app-test/config"
 
-	"github.com/Vantuan1606/app-buff/domain"
-	"github.com/Vantuan1606/app-buff/service/database"
+	"github.com/Vantuan1606/app-test/domain"
+	"github.com/Vantuan1606/app-test/service/database"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

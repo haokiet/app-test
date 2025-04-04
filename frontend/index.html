@@ -3,43 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nhập Link TikTok</title>
+    <title>Nhập số lượng tài khoản</title>
 </head>
 <body>
-    <h2>Nhập Link TikTok</h2>
+    <h2>Nhập link</h2>
+    <form id="linkForm">
+        <input type="text" id="linkInput" required />
+    </form>
 
-    <label>Nhập Link:</label>
-    <input type="text" id="linkInput" placeholder="Nhập link"><br><br>
+    <h2>Nhập số lượng tài khoản</h2>
+    <form id="countForm">
+        <input type="number" id="countInput" min="1" required />
+        <button type="submit">Gửi</button>
+    </form>
 
-    <label>Nhập Số:</label>
-    <input type="number" id="numberInput" placeholder="Nhập số"><br><br>
-
-    <button onclick="sendData()">Bắt Đầu</button>
-
-    <p id="response" style="color: green;"></p> <!-- Vị trí hiển thị thông báo -->
+    <h2>Danh sách tài khoản</h2>
+    <ul id="userList"></ul>
 
     <script>
-        function sendData() {
-            let link = document.getElementById("linkInput").value;
-            let number = document.getElementById("numberInput").value;
+       document.getElementById("countForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const count = document.getElementById("countInput").value;
 
-            // fetch("http://localhost:8080/", {
-            //     method: "POST",
-            //     headers: { "Content-Type": "application/json" },
-            //     body: JSON.stringify({ link: link, number: parseInt(number) })
-            // })
-            // .then(response => response.text())
-            // .then(data => {
-                // Hiển thị thông báo thành công
-                document.getElementById("response").innerText = "Thông báo: " + data;
-                document.getElementById("response").style.color = "green"; // Màu xanh cho thông báo thành công
-            // })
-            // .catch(error => {
-            //     // Hiển thị thông báo lỗi nếu có
-            //     document.getElementById("response").innerText = "Lỗi: " + error;
-            //     document.getElementById("response").style.color = "red"; // Màu đỏ cho thông báo lỗi
-            // });
-        }
+            if (!count || count <= 0) {
+                alert("Vui lòng nhập số hợp lệ!");
+                return;
+            }
+
+            console.log("Số lượng yêu cầu:", count);
+
+            try {
+                const response = await fetch(`http://localhost:8080/user?limit=${count}`);
+                const data = await response.json();
+
+                // Xóa danh sách cũ trước khi thêm mới
+                const userList = document.getElementById("userList");
+                userList.innerHTML = "";
+
+                // Hiển thị danh sách user
+                data.users.forEach(user => {
+                    const listItem = document.createElement("li");
+                    listItem.textContent = `name: ${user.username}, pass: ${user.password}`;
+                    userList.appendChild(listItem);
+                });
+
+            } catch (error) {
+                console.error("Lỗi khi gọi API:", error);
+            }
+        });
     </script>
 </body>
 </html>

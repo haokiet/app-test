@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Vantuan1606/app-buff/config"
-	"github.com/Vantuan1606/app-buff/service/database"
-	userHTTPHandler "github.com/Vantuan1606/app-buff/user/delivery/http"
-	userRepo "github.com/Vantuan1606/app-buff/user/repo"
-	userUsecase "github.com/Vantuan1606/app-buff/user/usecase"
+	"github.com/Vantuan1606/app-test/config"
+	"github.com/Vantuan1606/app-test/service/database"
+	userHTTPHandler "github.com/Vantuan1606/app-test/user/delivery/http"
+	userRepo "github.com/Vantuan1606/app-test/user/repo"
+	userUsecase "github.com/Vantuan1606/app-test/user/usecase"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
@@ -44,7 +44,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.Handle("/", http.FileServer(http.Dir("."))) // Phục vụ file tĩnh (index.html)
+	http.Handle("/", http.FileServer(http.Dir(".")))
 	http.HandleFunc("/user", apiHandler)
 	config := config.GetConfig()
 

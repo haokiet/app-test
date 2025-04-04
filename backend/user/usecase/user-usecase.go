@@ -7,8 +7,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/Vantuan1606/app-buff/domain"
-	"github.com/Vantuan1606/app-buff/user"
+	"github.com/Vantuan1606/app-test/domain"
+	"github.com/Vantuan1606/app-test/user"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -49,6 +49,28 @@ func (us *userUsecase) GetUser(c context.Context, userID string) (*domain.User, 
 	return user, nil
 }
 
+// func (us *userUsecase) List(c context.Context, input *user.ListUserInput) ([]*domain.User, error) {
+// 	ctx, cancel := context.WithTimeout(c, us.contextTimeout)
+// 	defer cancel()
+
+// 	conditions := bson.M{}
+
+// 	options := options.Find()
+
+// 	options.SetSkip(int64(*input.Offset))
+// 	options.SetLimit(int64(*input.Limit))
+
+// 	users, err := us.userRepo.Find(ctx, conditions, options)
+
+// 	if err != nil {
+// 		logrus.WithError(err).Error("Get list user failed")
+// 		return nil, err
+// 	}
+
+// 	return users, nil
+
+// }
+
 func (us *userUsecase) List(c context.Context, input *user.ListUserInput) ([]*domain.User, error) {
 	ctx, cancel := context.WithTimeout(c, us.contextTimeout)
 	defer cancel()
@@ -56,17 +78,13 @@ func (us *userUsecase) List(c context.Context, input *user.ListUserInput) ([]*do
 	conditions := bson.M{}
 
 	options := options.Find()
-
-	options.SetSkip(int64(*input.Offset))
-	options.SetLimit(int64(*input.Limit))
+	options.SetLimit(int64(*input.Limit)) // Giới hạn số lượng user trả về
 
 	users, err := us.userRepo.Find(ctx, conditions, options)
-
 	if err != nil {
 		logrus.WithError(err).Error("Get list user failed")
 		return nil, err
 	}
 
 	return users, nil
-
 }
