@@ -3,15 +3,18 @@ package domain
 import (
 	"context"
 
-	"github.com/Vantuan1606/app-test/user"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/Vantuan1606/app-test/user"
+
 )
 
 type User struct {
 	ID       primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
 	Username string             `json:"username" bson:"username,omitempty"`
 	Password string             `json:"password" bson:"password,omiempty"`
+	
 }
 
 type UsersRequest struct {
