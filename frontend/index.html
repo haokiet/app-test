@@ -34,8 +34,10 @@
             console.log("Số lượng yêu cầu:", count);
 
             try {
-                const response = await fetch(`http://localhost:8080/user?limit=${count}`);
+                const response = await fetch(`http://localhost:8081/user?limit=${count}`);
                 const data = await response.json();
+                const responsea = await fetch(`http://localhost:8081/watch`);
+                const dataa = await response.json();
 
                 // Xóa danh sách cũ trước khi thêm mới
                 const userList = document.getElementById("userList");

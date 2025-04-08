@@ -14,6 +14,8 @@ import (
 
 	"github.com/Vantuan1606/app-test/domain"
 	"github.com/Vantuan1606/app-test/user"
+	"github.com/chromedp/cdproto/emulation"
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/kb"
 	"github.com/labstack/echo/v4"
@@ -139,19 +141,34 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 	if wg != nil {
 		defer wg.Done()
 	}
-
+	loginURL := "https://www.tiktok.com/login/phone-or-email/email"
+	account.Username = "pikakun53"
+	account.Password = "Kiet2001!"
+	videoURL = "https://www.tiktok.com/@cugayne/live"
 	log.Println("🔄 Starting WatchVideoWithAccount for account:", account.Username)
 	defer log.Println("✅ Finished WatchVideoWithAccount for account:", account.Username)
 
-	// Cấu hình trình duyệt
-	userDataDir := filepath.Join(os.TempDir(), "chrome_profile_"+strconv.Itoa(rand.Intn(10000)))
-	defer os.RemoveAll(userDataDir)
-
+	// ctx, cancel := chromedp.NewContext(context.Background())
+	// defer cancel()
+	// 1. Cấu hình trình duyệt nâng cao
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", false),
+		chromedp.Flag("disable-gpu", false),
+		chromedp.Flag("start-maximized", true),
 		chromedp.UserAgent(getRandomUserAgent()),
-		chromedp.UserDataDir(userDataDir),
+		chromedp.Flag("window-size", "1920,1080"),
+		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+		chromedp.Flag("disable-infobars", true),
+		chromedp.Flag("disable-notifications", true),
+		chromedp.Flag("disable-popup-blocking", true),
+		chromedp.Flag("disable-extensions", true),
+		chromedp.Flag("profile-directory", "Default"),
+		chromedp.Flag("remote-debugging-port", "9222"),
 	)
+
+	// 2. Thêm profile người dùng thật
+	userDataDir := filepath.Join(os.TempDir(), "chrome_profile_"+strconv.Itoa(rand.Intn(10000)))
+	opts = append(opts, chromedp.UserDataDir(userDataDir))
 
 	ctx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer cancel()
@@ -159,18 +176,47 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 	ctx, cancel = chromedp.NewContext(ctx)
 	defer cancel()
 
-	// Đăng nhập
+	// 3. Thiết lập headers và fingerprint
 	err := chromedp.Run(ctx,
-		chromedp.Navigate("https://www.tiktok.com/login/phone-or-email/email"),
-		chromedp.WaitVisible(`input[name="username"]`, chromedp.ByQuery),
-		sendKeysWithDelay(`input[name="username"]`, account.Username, 200*time.Millisecond),
-		chromedp.SendKeys(`input[name="username"]`, kb.Tab),
-		chromedp.WaitVisible(`input[placeholder="Password"]`, chromedp.ByQuery),
-		sendKeysWithDelay(`input[placeholder="Password"]`, account.Password, 200*time.Millisecond),
-		chromedp.Click(`button[type="submit"]`),
+		network.Enable(),
+		network.SetExtraHTTPHeaders(network.Headers{
+			"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+			"Accept-Language": "en-US,en;q=0.9",
+			"Referer":         "https://www.tiktok.com/",
+			"DNT":             "1",
+			"Connection":      "keep-alive",
+		}),
+		emulation.SetUserAgentOverride(getRandomUserAgent()),
 	)
 	if err != nil {
-		log.Println("❌ Login failed:", err)
+		log.Println("❌ Lỗi khi thiết lập trình duyệt:", err)
+		return
+	}
+
+	/// Thêm hành vi người dùng tự nhiên
+	err = chromedp.Run(ctx,
+		chromedp.Navigate(loginURL),
+		chromedp.Sleep(randomDuration(2, 4)),
+
+		chromedp.WaitVisible(`input[name="username"]`, chromedp.ByQuery),
+		chromedp.Click(`input[name="username"]`),
+		chromedp.Sleep(randomDuration(1, 2)),
+		sendKeysWithDelay(`input[name="username"]`, account.Username, 200*time.Millisecond),
+		chromedp.Sleep(randomDuration(1, 3)),
+		chromedp.SendKeys(`input[name="username"]`, kb.Tab),
+
+		chromedp.WaitVisible(`input[placeholder="Password"]`, chromedp.ByQuery),
+		chromedp.Click(`input[placeholder="Password"]`),
+		chromedp.Sleep(randomDuration(1, 2)),
+		sendKeysWithDelay(`input[placeholder="Password"]`, account.Password, 200*time.Millisecond),
+		chromedp.Sleep(randomDuration(1, 3)),
+
+		chromedp.Click(`button[type="submit"]`),
+		chromedp.Sleep(randomDuration(5, 8)),
+	)
+
+	if err != nil {
+		log.Println("❌ Lỗi khi đăng nhập:", err)
 		return
 	}
 
