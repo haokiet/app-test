@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -12,15 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Vantuan1606/app-test/domain"
+	"github.com/Vantuan1606/app-test/user"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/kb"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"github.com/Vantuan1606/app-test/domain"
-	"github.com/Vantuan1606/app-test/user"
 )
 
 type UserHTTPHandler struct {
@@ -143,14 +141,8 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 		defer wg.Done()
 	}
 	loginURL := "https://www.tiktok.com/login/phone-or-email/email"
-	account.Username = "pikakun53"
-	account.Password = "Kiet2001!"
-	log.Println("🔄 videoUrl:", videoURL)
-	log.Println("🔄 Starting WatchVideoWithAccount for account:", account.Username)
-	defer log.Println("✅ Finished WatchVideoWithAccount for account:", account.Username)
-
-	// ctx, cancel := chromedp.NewContext(context.Background())
-	// defer cancel()
+	// account.Username = "pikakun53"
+	// account.Password = "Kiet2001!"
 	// 1. Cấu hình trình duyệt nâng cao
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", false),
@@ -166,7 +158,10 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 		chromedp.Flag("profile-directory", "Default"),
 		chromedp.Flag("remote-debugging-port", "9222"),
 	)
-
+	// Thêm cấu hình proxy nếu được cung cấp
+	// if proxy != "" {
+	// 	opts = append(opts, chromedp.ProxyServer(proxy))
+	// }
 	// 2. Thêm profile người dùng thật
 	userDataDir := filepath.Join(os.TempDir(), "chrome_profile_"+strconv.Itoa(rand.Intn(10000)))
 	opts = append(opts, chromedp.UserDataDir(userDataDir))
@@ -190,15 +185,13 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 		emulation.SetUserAgentOverride(getRandomUserAgent()),
 	)
 	if err != nil {
-		log.Println("❌ Lỗi khi thiết lập trình duyệt:", err)
 		return
 	}
 
 	/// Thêm hành vi người dùng tự nhiên
 	err = chromedp.Run(ctx,
 		chromedp.Navigate(loginURL),
-		chromedp.Sleep(randomDuration(2, 4)),
-
+		chromedp.Sleep(randomDuration(2, 3)),
 		chromedp.WaitVisible(`input[name="username"]`, chromedp.ByQuery),
 		chromedp.Click(`input[name="username"]`),
 		chromedp.Sleep(randomDuration(1, 2)),
@@ -217,30 +210,96 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 	)
 
 	if err != nil {
-		log.Println("❌ Lỗi khi đăng nhập:", err)
 		return
 	}
 
 	// Kiểm tra CAPTCHA
 	var hasCaptcha bool
-	err = chromedp.Run(ctx, chromedp.Evaluate(`document.querySelector('.captcha-verify-container') !== null`, &hasCaptcha))
-	if err != nil || hasCaptcha {
-		log.Println("⚠️ CAPTCHA detected. Unable to proceed.")
-		return
-	}
-
-	// Xem video
-	log.Println("✅ Login successful. Watching video...")
 	err = chromedp.Run(ctx,
-		chromedp.Navigate(videoURL),
-		chromedp.Sleep(randomDuration(3, 5)),
+		chromedp.Evaluate(`
+            // Kiểm tra cả 2 loại CAPTCHA phổ biến của TikTok
+            document.querySelector('.captcha-verify-container') !== null || 
+            document.querySelector('iframe[src*="captcha"]') !== null ||
+            document.querySelector('div[id*="verify"]') !== null
+        `, &hasCaptcha),
 	)
 	if err != nil {
-		log.Println("❌ Error watching video:", err)
 		return
 	}
 
-	log.Println("✅ Video watched successfully.")
+	if hasCaptcha {
+		time.Sleep(20 * time.Second)
+	}
+
+	// Kiểm tra đăng nhập thành công
+	var cookies []*network.Cookie
+	err = chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+		var err error
+		cookies, err = network.GetCookies().Do(ctx)
+		return err
+	}))
+	var loginCheck bool
+
+	// Tìm giá trị sessionid
+	for _, cookie := range cookies {
+		if cookie.Name == "sessionid" {
+			loginCheck = true
+		}
+	}
+
+	if err != nil || loginCheck == false {
+
+		return
+	}
+
+	// Xem video với hành vi tự nhiên
+	err = chromedp.Run(ctx,
+		chromedp.Navigate(videoURL),
+		chromedp.Sleep(randomDuration(3, 5)), // Chờ trang tải
+
+		// Bắt đầu gửi bình luận tự động
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			comments := []string{
+				"Video hay quá!",
+				"Tôi rất thích nội dung này",
+				"Cảm ơn bạn đã chia sẻ",
+				"❤️❤️❤️",
+				"Quá tuyệt vời!",
+				"Tôi sẽ chia sẻ video này",
+				"Nội dung chất lượng",
+				"Bạn thật tài năng",
+			}
+
+			// Chọn ngẫu nhiên một bình luận từ danh sách
+			randomIndex := rand.Intn(len(comments))
+			randomComment := comments[randomIndex]
+
+			// Tìm ô nhập bình luận và gửi
+			err := chromedp.Run(ctx,
+				chromedp.WaitVisible(`.tiktok-1772j3i[contenteditable="plaintext-only"]`, chromedp.ByQuery),
+				chromedp.Click(`.tiktok-1772j3i[contenteditable="plaintext-only"]`, chromedp.ByQuery),
+				chromedp.Sleep(2*time.Second),
+				chromedp.SendKeys(`.tiktok-1772j3i[contenteditable="plaintext-only"]`, randomComment, chromedp.ByQuery),
+				chromedp.Sleep(1*time.Second),
+				chromedp.Click(`.tiktok-mortok.e2lzvyu9`, chromedp.ByQuery),        // Nút gửi
+				chromedp.WaitVisible(`.tiktok-fa6jvh.e1tv929b2`, chromedp.ByQuery), // Đảm bảo bình luận đã được gửi (có thể cần điều chỉnh selector)
+				chromedp.Click(`.tiktok-fa6jvh.e1tv929b2`, chromedp.ByQuery),       // Có thể cần thêm một hành động sau khi gửi
+				chromedp.Sleep(5*time.Second),
+			)
+
+			if err != nil {
+				return err
+			}
+			return nil
+		}),
+	)
+
+	if err != nil {
+		return
+	}
+
+	time.Sleep(30 * time.Minute)
+
 }
 
 // Hàm hỗ trợ - lấy user-agent ngẫu nhiên
