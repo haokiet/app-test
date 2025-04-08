@@ -6,14 +6,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/sirupsen/logrus"
+
 	"github.com/Vantuan1606/app-test/config"
+	hashtagHTTPHandler "github.com/Vantuan1606/app-test/hashtag/delivery/http"
+	hashtagRepo "github.com/Vantuan1606/app-test/hashtag/repo"
+	hashtagUsecase "github.com/Vantuan1606/app-test/hashtag/usecase"
 	"github.com/Vantuan1606/app-test/service/database"
 	userHTTPHandler "github.com/Vantuan1606/app-test/user/delivery/http"
 	userRepo "github.com/Vantuan1606/app-test/user/repo"
 	userUsecase "github.com/Vantuan1606/app-test/user/usecase"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/sirupsen/logrus"
 )
 
 type RequestData struct {
@@ -44,6 +48,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
 	http.Handle("/", http.FileServer(http.Dir(".")))
 	http.HandleFunc("/user", apiHandler)
 	config := config.GetConfig()
@@ -64,9 +69,12 @@ func main() {
 	})
 
 	pr := userRepo.NewMongoUserRepo()
+	hg := hashtagRepo.NewMongoHashtagRepo()
 
 	pu := userUsecase.NewUserUsecase(pr, 60*time.Second)
+	hgs := hashtagUsecase.NewHashtagUsecase(hg, 60*time.Second)
 	userHTTPHandler.NewUserHTTPHandler(e, pu)
+	hashtagHTTPHandler.NewHashtagHTTPHandler(e, hgs)
 
 	privateAPI := e.Group("/private")
 
