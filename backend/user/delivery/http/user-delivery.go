@@ -12,14 +12,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Vantuan1606/app-test/domain"
-	"github.com/Vantuan1606/app-test/user"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/kb"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/Vantuan1606/app-test/domain"
+	"github.com/Vantuan1606/app-test/user"
 )
 
 type UserHTTPHandler struct {
@@ -144,7 +145,7 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 	loginURL := "https://www.tiktok.com/login/phone-or-email/email"
 	account.Username = "pikakun53"
 	account.Password = "Kiet2001!"
-	videoURL = "https://www.tiktok.com/@cugayne/live"
+	log.Println("🔄 videoUrl:", videoURL)
 	log.Println("🔄 Starting WatchVideoWithAccount for account:", account.Username)
 	defer log.Println("✅ Finished WatchVideoWithAccount for account:", account.Username)
 
