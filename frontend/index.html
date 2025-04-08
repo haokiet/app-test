@@ -25,7 +25,8 @@
        document.getElementById("countForm").addEventListener("submit", async function (event) {
             event.preventDefault();
             const count = document.getElementById("countInput").value;
-
+            const link= document.getElementById("linkInput").value;
+            console.log("link:", link)
             if (!count || count <= 0) {
                 alert("Vui lòng nhập số hợp lệ!");
                 return;
@@ -36,12 +37,28 @@
             try {
                 const response = await fetch(`http://localhost:8081/user?limit=${count}`);
                 const data = await response.json();
-                const responsea = await fetch(`http://localhost:8081/watch`);
-                const dataa = await response.json();
+               
+                // const responsea = await fetch(``);
+                // const dataa = await response.json();
 
                 // Xóa danh sách cũ trước khi thêm mới
                 const userList = document.getElementById("userList");
                 userList.innerHTML = "";
+                for (const user of data.users) {
+                const postResponse = await fetch("http://localhost:8081/watch", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        username: user.username,
+                        password: user.password,
+                        video_url: link,
+                    }),
+                });
+
+                const postResult = await postResponse.json();
+                
 
                 // Hiển thị danh sách user
                 data.users.forEach(user => {
@@ -49,7 +66,7 @@
                     listItem.textContent = `name: ${user.username}, pass: ${user.password}`;
                     userList.appendChild(listItem);
                 });
-
+            }
             } catch (error) {
                 console.error("Lỗi khi gọi API:", error);
             }
