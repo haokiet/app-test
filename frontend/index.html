@@ -20,36 +20,7 @@
     <h2>Danh sách tài khoản</h2>
     <ul id="userList"></ul>
 
-    <label for="commnet">Chọn Comment:</label>
-    <select name="commnet" id="commnet"> </select>  
-    
-
     <script>
-         document.addEventListener("DOMContentLoaded", async function () {
-        try {
-            // Gọi API để lấy danh sách hashtag
-            const response = await fetch("http://localhost:8080/hashtag");
-            const data = await response.json();
-
-            // Kiểm tra nếu API trả về lỗi
-            if (!data.hashtags || data.hashtags.length === 0) {
-                console.error("Không có hashtag nào được trả về từ backend!");
-                return;
-            }
-
-            // Hiển thị danh sách hashtag trong <select>
-            const hashtagSelect = document.getElementById("commnet"); // Chọn <select> với id="commnet"
-            hashtagSelect.innerHTML = ""; // Xóa các <option> cũ trước khi thêm mới
-            data.hashtags.forEach(hashtag => {
-                const option = document.createElement("option");
-                option.value = hashtag.id; // Gán giá trị cho <option>
-                option.textContent = hashtag.name; // Hiển thị tên hashtag
-                hashtagSelect.appendChild(option);
-            });
-        } catch (error) {
-            console.error("Lỗi khi gọi API hashtag:", error);
-        }
-    });
         
        document.getElementById("countForm").addEventListener("submit", async function (event) {
             event.preventDefault();
@@ -64,25 +35,30 @@
             console.log("Số lượng yêu cầu:", count);
 
             try {
-                const response = await fetch(`http://localhost:8080/user?limit=${count}`);
+                const response = await fetch(`http://localhost:8081/user?limit=${count}`);
                 const data = await response.json();
+
+                // Xóa danh sách cũ trước khi thêm mới
                 const userList = document.getElementById("userList");
                 userList.innerHTML = "";
-                for (const user of data.users) {
-                const postResponse = await fetch("http://localhost:8080/watch", {
+                if (data && data.users) {
+                // Tạo một mảng các Promises cho mỗi user để gọi API /watch song song
+                const watchPromises = data.users.map(user => {
+                return fetch("http://localhost:8081/watch", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
+                    "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        username: user.username,
-                        password: user.password,
-                        video_url: link,
+                    username: user.username,
+                    password: user.password,
+                    video_url: link,
                     }),
+                }).then(response => response.json()); // Chú ý: .then để xử lý response của từng promise
                 });
 
-                const postResult = await postResponse.json();
-                
+                const watchResults = await Promise.all(watchPromises);
+                            
 
                 // Hiển thị danh sách user
                 data.users.forEach(user => {
@@ -95,8 +71,6 @@
                 console.error("Lỗi khi gọi API:", error);
             }
         });
-    
-    
     </script>
 </body>
 </html>
