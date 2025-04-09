@@ -42,6 +42,21 @@ type responseUsers struct {
 	Users interface{} `json:"users"`
 }
 
+type ProxyResponse struct {
+	Count   int `json:"count"`
+	Results []struct {
+		Username     string `json:"username"`
+		Password     string `json:"password"`
+		ProxyAddress string `json:"proxy_address"`
+		Ports        struct {
+			HTTP   int `json:"http"`
+			Socks5 int `json:"socks5"`
+		} `json:"ports"`
+		CountryCode string `json:"country_code"`
+		CityName    string `json:"city_name"`
+	} `json:"results"`
+}
+
 func NewUserHTTPHandler(e *echo.Echo, us domain.IUserUsecase) {
 	handler := &UserHTTPHandler{
 		userUsecase: us,
@@ -123,58 +138,32 @@ func (uss *UserHTTPHandler) WatchVideoWithAccount(c echo.Context) error {
 		})
 	}
 
-	// Tạo tài khoản người dùng từ thông tin yêu cầu
 	account := &domain.User{
 		Username: req.Username,
 		Password: req.Password,
 	}
-	// Lấy proxy ngẫu nhiên từ API
 	proxy, erro := getRandomProxy("3uisbtk31gnbde9bhzd0kbwbqpe0ftph4hajrsxt")
 	if erro != nil {
 		fmt.Printf("Không thể lấy proxy: %v\n", erro)
 	}
-	// Gọi logic xem video
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go uss.watchVideo(account, req.VideoURL, &wg, proxy)
 	wg.Wait()
 
-	// Phản hồi thành công
 	return c.JSON(http.StatusOK, &responseUser{
 		User: "Video watched successfully",
 	})
 }
 
-// ProxyResponse cấu trúc dữ liệu trả về từ API Webshare
-type ProxyResponse struct {
-	Count   int `json:"count"`
-	Results []struct {
-		Username     string `json:"username"`
-		Password     string `json:"password"`
-		ProxyAddress string `json:"proxy_address"`
-		Ports        struct {
-			HTTP   int `json:"http"`
-			Socks5 int `json:"socks5"`
-		} `json:"ports"`
-		CountryCode string `json:"country_code"`
-		CityName    string `json:"city_name"`
-	} `json:"results"`
-}
-
-// Hàm lấy proxy ngẫu nhiên từ Webshare API
 // Hàm lấy proxy ngẫu nhiên từ Webshare API
 func getRandomProxy(apiKey string) (string, error) {
-	// URL của API Webshare để lấy danh sách proxy
 	apiURL := "https://proxy.webshare.io/api/proxy/list/"
-
-	// Gửi yêu cầu GET với API Key
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Authorization", "Token "+apiKey)
-
-	// Gửi yêu cầu HTTP
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -182,40 +171,32 @@ func getRandomProxy(apiKey string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	// Đọc phản hồi body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
 
-	// Kiểm tra mã trạng thái
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("lỗi khi lấy proxy từ Webshare: %s", resp.Status)
 	}
 
-	// Giải mã phản hồi JSON vào struct ProxyResponse
 	var proxyResp ProxyResponse
 	if err := json.Unmarshal(body, &proxyResp); err != nil {
 		return "", err
 	}
 
-	// Kiểm tra nếu không có proxy nào trong kết quả
 	if len(proxyResp.Results) == 0 {
 		return "", fmt.Errorf("không có proxy nào trong kết quả")
 	}
 
-	rand.Seed(time.Now().UnixNano()) // Đảm bảo mỗi lần chạy sẽ chọn ngẫu nhiên
+	rand.Seed(time.Now().UnixNano())
 	randomIndex := rand.Intn(len(proxyResp.Results))
 
-	// Lấy địa chỉ proxy và cổng
 	proxyAddress := proxyResp.Results[randomIndex].ProxyAddress
-	httpPort := proxyResp.Results[randomIndex].Ports.HTTP // Cổng HTTP
-	// socksPort := proxyResp.Results[randomIndex].Ports.Socks5 // Cổng SOCKS5
+	httpPort := proxyResp.Results[randomIndex].Ports.HTTP
 
-	// Bạn có thể thay đổi nếu muốn dùng cổng SOCKS5
-	proxyWithPort := fmt.Sprintf("%s:%s@%s:%d", proxyAddress, httpPort) // Sử dụng cổng HTTP
+	proxyWithPort := fmt.Sprintf("%s:%s@%s:%d", proxyAddress, httpPort)
 
-	// Trả về proxy đầy đủ (địa chỉ + cổng)
 	return proxyWithPort, nil
 }
 
@@ -225,8 +206,6 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 	}
 
 	loginURL := "https://www.tiktok.com/login/phone-or-email/email"
-	// account.Username = "pikakun53"
-	// account.Password = "Kiet2001!"
 	// 1. Cấu hình trình duyệt nâng cao
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", false),
@@ -243,11 +222,9 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 		chromedp.Flag("remote-debugging-port", "9222"),
 	)
 
-	// Thêm cấu hình proxy nếu được cung cấp
 	if proxy != "" {
 		opts = append(opts, chromedp.ProxyServer(proxy))
 	}
-	// 2. Thêm profile người dùng thật
 	userDataDir := filepath.Join(os.TempDir(), "new_chrome_profile_"+strconv.Itoa(rand.Intn(10000)))
 	opts = append(opts, chromedp.UserDataDir(userDataDir))
 
@@ -257,7 +234,6 @@ func (uss *UserHTTPHandler) watchVideo(account *domain.User, videoURL string, wg
 	ctx, cancel = chromedp.NewContext(ctx)
 	defer cancel()
 
-	// 3. Thiết lập headers và fingerprint
 	err := chromedp.Run(ctx,
 		network.Enable(),
 		network.SetExtraHTTPHeaders(network.Headers{
